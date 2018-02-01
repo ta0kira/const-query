@@ -6,6 +6,7 @@ namespace const_query {
 template<class ValueType>
 class SimpleColumn {
  public:
+  // Used internally for meta-programming.
   using ColumnType = ValueType;
 
   static bool ParseFromString(const std::string& value, ColumnType* output) {
@@ -32,6 +33,7 @@ class SimpleColumn {
 
 class CountColumn {
  public:
+  // Used internally for meta-programming.
   using ColumnType = int;
 
   static bool ParseFromString(const std::string& value, int* output) {
