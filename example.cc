@@ -31,7 +31,7 @@ std::ostream& operator << (std::ostream& out, const PrintType<std::string>& type
 }
 
 int main() {
-  static constexpr auto selector = Select(
+  static constexpr auto selector = const_query::Select(
     ChainTable::EmptyQuery()
       .Get<ChainTable::ColumnName::COUNT_KEY>()
       .Get<ChainTable::ColumnName::NAME>(),

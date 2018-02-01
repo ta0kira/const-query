@@ -1,6 +1,17 @@
 #ifndef STATIC_ERRORS_H_
 #define STATIC_ERRORS_H_
 
+namespace const_query {
+
+template<class ColumnEnum> class Table;
+template<class ColumnEnum, ColumnEnum Name> class Column;
+
+namespace internal {
+template<class Queries, class Joins, bool Complete> class JoinedSelector;
+}  // namespace internal
+
+namespace errors {
+
 template<class Base>
 struct SpecializeWithTypedef {
   SpecializeWithTypedef() = delete;
@@ -12,7 +23,7 @@ class SpecializeWithStaticFunction {
  private:
   SpecializeWithStaticFunction() = default;
   ~SpecializeWithStaticFunction() = default;
-  template <class ColumnEnum> friend class Table;
+  template<class ColumnEnum> friend class Table;
   template<class ColumnEnum, ColumnEnum Name> friend class Column;
 };
 
@@ -21,14 +32,14 @@ class YouNeedThisManyMoreJoins {
  private:
   YouNeedThisManyMoreJoins() = default;
   ~YouNeedThisManyMoreJoins() = default;
-  template<class Queries, class Joins, bool Complete> friend class JoinedSelector;
+  template<class Queries, class Joins, bool Complete> friend class ::const_query::internal::JoinedSelector;
 };
 
 class YouAlreadyHaveEnoughJoins {
  private:
   YouAlreadyHaveEnoughJoins() = default;
   ~YouAlreadyHaveEnoughJoins() = default;
-  template<class Queries, class Joins, bool Complete> friend class JoinedSelector;
+  template<class Queries, class Joins, bool Complete> friend class ::const_query::internal::JoinedSelector;
 };
 
 template <int Index>
@@ -47,5 +58,8 @@ struct TheseTablesAreNotInTheSameDatabase {
   TheseTablesAreNotInTheSameDatabase() = delete;
   ~TheseTablesAreNotInTheSameDatabase() = delete;
 };
+
+}  // namespace errors
+}  // namespace const_query
 
 #endif  // STATIC_ERRORS_H_

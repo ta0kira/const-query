@@ -1,6 +1,8 @@
 #ifndef QUERY_H_
 #define QUERY_H_
 
+namespace const_query {
+
 // Generic Query
 
 template<class ColumnEnum, ColumnEnum ... Names>
@@ -29,5 +31,7 @@ class Query {
     return !(*this == other);
   }
 };
+
+}  // namespace const_query
 
 #endif  // QUERY_H_

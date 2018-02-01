@@ -24,13 +24,15 @@ class ChainTable {
     COUNT_KEY,
   };
 
-  static constexpr Query<ColumnName> EmptyQuery() {
-    return Query<ColumnName>();
+  static constexpr const_query::Query<ColumnName> EmptyQuery() {
+    return const_query::Query<ColumnName>();
   }
 
   ChainTable() = delete;
   ~ChainTable() = delete;
 };
+
+namespace const_query {
 
 template<>
 struct Database<ChainTable::ColumnName> {
@@ -82,6 +84,8 @@ struct Column<ChainTable::ColumnName, ChainTable::ColumnName::COUNT_KEY>
   }
 };
 
+}  // namespace const_query
+
 class DataTable {
  public:
   enum class ColumnName {
@@ -89,13 +93,15 @@ class DataTable {
     DATA,
   };
 
-  static constexpr Query<ColumnName> EmptyQuery() {
-    return Query<ColumnName>();
+  static constexpr const_query::Query<ColumnName> EmptyQuery() {
+    return const_query::Query<ColumnName>();
   }
 
   DataTable() = delete;
   ~DataTable() = delete;
 };
+
+namespace const_query {
 
 template<>
 struct Database<DataTable::ColumnName> {
@@ -122,5 +128,7 @@ struct Column<DataTable::ColumnName, DataTable::ColumnName::DATA>
     return WithTable(table, "Data");
   }
 };
+
+}  // namespace const_query
 
 #endif  // EXAMPLE_H_

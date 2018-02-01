@@ -12,6 +12,9 @@
 #include "schema.h"
 #include "static_errors.h"
 
+namespace const_query {
+namespace internal {
+
 // Join Representation and Collection
 
 template<int L, class ColumnEnumL, ColumnEnumL ColumnL,
@@ -65,7 +68,7 @@ class JoinedSelector<Queries, Joins, true> {
     }
   }
 
-  static constexpr auto JoinNextOn = YouAlreadyHaveEnoughJoins();
+  static constexpr auto JoinNextOn = errors::YouAlreadyHaveEnoughJoins();
 
  private:
   std::string GetColumns() const {
@@ -94,16 +97,20 @@ class JoinedSelector<Queries, Joins, true> {
   }
 };
 
+}  // namespace internal
+
 template<class Queries, class Joins = std::tuple<>>
-struct Selector : public JoinedSelector<Queries, Joins,
-                                        std::tuple_size<Queries>::value ==
-                                        std::tuple_size<Joins>::value+1> {};
+struct Selector : public internal::JoinedSelector<Queries, Joins,
+                                                  std::tuple_size<Queries>::value ==
+                                                  std::tuple_size<Joins>::value+1> {};
 
 template<>
 struct Selector<std::tuple<>, std::tuple<>> {
   Selector() = delete;
   ~Selector() = delete;
 };
+
+namespace internal {
 
 template<class Queries, class Joins, bool Valid, int Index>
 struct ValidateJoin {};
@@ -115,7 +122,7 @@ struct ValidateJoin<Queries, Joins, true, Index> {
 
 template<class Queries, class Joins, int Index>
 struct ValidateJoin<Queries, Joins, false, Index> {
-  using Type = YouMustJoinWithAnIndexLessThan<Index>;
+  using Type = errors::YouMustJoinWithAnIndexLessThan<Index>;
 };
 
 template <class Tuple, class Join>
@@ -155,8 +162,8 @@ class JoinedSelector<Queries, Joins, false> {
                                  L < NextJoin, NextJoin>::Type();
   }
 
-  static constexpr auto GetQuery = YouNeedThisManyMoreJoins<RemainingJoins>();
-  static constexpr auto ConvertRow = YouNeedThisManyMoreJoins<RemainingJoins>();
+  static constexpr auto GetQuery = errors::YouNeedThisManyMoreJoins<RemainingJoins>();
+  static constexpr auto ConvertRow = errors::YouNeedThisManyMoreJoins<RemainingJoins>();
 };
 
 template <class TheType, class Tuple>
@@ -172,7 +179,7 @@ struct CheckSameDatabase<TheType, std::tuple<Table>> {
 
 template <class TheType, class Table1, class Database1, class Table2, class Database2>
 struct OnSuccess {
-  using Type = TheseTablesAreNotInTheSameDatabase<Table1, Database1, Table2, Database2>;
+  using Type = errors::TheseTablesAreNotInTheSameDatabase<Table1, Database1, Table2, Database2>;
 };
 
 template <class TheType, class Table1, class Database, class Table2>
@@ -194,12 +201,16 @@ struct NonEmptySelector {
 
 template<>
 struct NonEmptySelector<> {
-  using Type = YouMayNotHaveAnEmptySelector;
+  using Type = errors::YouMayNotHaveAnEmptySelector;
 };
 
+}  // namespace internal
+
 template<class ... Queries>
-constexpr typename NonEmptySelector<Queries...>::Type Select(Queries ... queries) {
-  return typename NonEmptySelector<Queries...>::Type();
+constexpr typename internal::NonEmptySelector<Queries...>::Type Select(Queries ... queries) {
+  return typename internal::NonEmptySelector<Queries...>::Type();
 }
+
+}  // namespace const_query
 
 #endif  // SELECTOR_H_

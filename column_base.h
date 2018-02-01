@@ -1,6 +1,8 @@
 #ifndef COLUMN_BASE_H_
 #define COLUMN_BASE_H_
 
+namespace const_query {
+
 template<class ValueType>
 class SimpleColumn {
  public:
@@ -53,5 +55,7 @@ class CountColumn {
     return output.str();
   }
 };
+
+}  // namespace const_query
 
 #endif  // COLUMN_BASE_H_

@@ -9,6 +9,9 @@
 #include "query.h"
 #include "schema.h"
 
+namespace const_query {
+namespace internal {
+
 // Converting Result Data
 
 template<class Columns, int Offset>
@@ -104,5 +107,8 @@ template <>
 struct CollectJoins<std::tuple<>> {
   static void To(std::vector<std::string>* output) {}
 };
+
+}  // namespace internal
+}  // namespace const_query
 
 #endif  // COLLECTION_H_

@@ -8,24 +8,61 @@
 #include "query.h"
 #include "static_errors.h"
 
+namespace const_query {
+
 // Schema Definition
 
 template <class ColumnEnum>
 struct Table {
   static constexpr auto TableName
-      = SpecializeWithStaticFunction<Table<ColumnEnum>, std::string()>();
+      = errors::SpecializeWithStaticFunction<Table<ColumnEnum>, std::string()>();
 };
 
 template<class ColumnEnum, ColumnEnum Name>
 struct Column {
-  using ColumnType = SpecializeWithTypedef<Column<ColumnEnum, Name>>;
+  using ColumnType = errors::SpecializeWithTypedef<Column<ColumnEnum, Name>>;
 
   static constexpr auto ColumnName
-      = SpecializeWithStaticFunction<Column<ColumnEnum, Name>, std::string(const std::string&)>();
+      = errors::SpecializeWithStaticFunction<Column<ColumnEnum, Name>, std::string(const std::string&)>();
 
   static constexpr auto ParseFromString
-      = SpecializeWithStaticFunction<Column<ColumnEnum, Name>, bool(const std::string&, ColumnType*)>();
+      = errors::SpecializeWithStaticFunction<Column<ColumnEnum, Name>, bool(const std::string&, ColumnType*)>();
 };
+
+namespace internal {
+
+struct UnknownDatabase {
+  UnknownDatabase() = delete;
+  ~UnknownDatabase() = delete;
+};
+
+}  // namespace internal
+
+// Database Identification
+
+template<class ColumnEnum>
+struct Database {
+  using Id = internal::UnknownDatabase;
+};
+
+// Table Aliases
+
+template <class ColumnEnum, int Number>
+struct TableAlias {
+  static std::string Define() {
+    std::ostringstream output;
+    output << Table<ColumnEnum>::TableName() << " AS " << Get();
+    return output.str();
+  }
+
+  static std::string Get() {
+    std::ostringstream output;
+    output << Table<ColumnEnum>::TableName() << "_" << Number;
+    return output.str();
+  }
+};
+
+namespace internal {
 
 // Collecting Column Type Information
 
@@ -53,33 +90,7 @@ struct QueriesToColumns<std::tuple<>, Columns...> {
   using Type = std::tuple<Columns...>;
 };
 
-// Database Identification
-
-struct UnknownDatabase {
-  UnknownDatabase() = delete;
-  ~UnknownDatabase() = delete;
-};
-
-template<class ColumnEnum>
-struct Database {
-  using Id = UnknownDatabase;
-};
-
-// Table Aliases
-
-template <class ColumnEnum, int Number>
-struct TableAlias {
-  static std::string Define() {
-    std::ostringstream output;
-    output << Table<ColumnEnum>::TableName() << " AS " << Get();
-    return output.str();
-  }
-
-  static std::string Get() {
-    std::ostringstream output;
-    output << Table<ColumnEnum>::TableName() << "_" << Number;
-    return output.str();
-  }
-};
+}  // namespace internal
+}  // namespace const_query
 
 #endif  // SCHEMA_H_
