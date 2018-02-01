@@ -1,4 +1,6 @@
+#include <initializer_list>
 #include <iostream>
+#include <list>
 #include <string>
 #include <vector>
 #include <tuple>
@@ -6,6 +8,31 @@
 #include "example.h"
 
 #include "selector.h"
+
+template<class RecordType>
+class QueryRunner {
+ public:
+  QueryRunner(const std::initializer_list<std::vector<std::string>>& raw_results)
+      : raw_results_(raw_results) {}
+
+  std::list<std::unique_ptr<RecordType>> Execute() {
+    static constexpr typename RecordType::Selector SELECTOR;
+    std::cerr << "Faking query: " << SELECTOR.GetQuery() << std::endl;
+    std::list<std::unique_ptr<RecordType>> results;
+    for (const std::vector<std::string>& raw_result : raw_results_) {
+      const auto converted = SELECTOR.ConvertRow(raw_result);
+      if (!converted) {
+        std::cerr << "conversion failed" << std::endl;
+      } else {
+        results.emplace_back(new RecordType(*converted));
+      }
+    }
+    return results;
+  }
+
+private:
+  const std::vector<std::vector<std::string>> raw_results_;
+};
 
 using example_schema::ChainTable;
 using example_schema::DataTable;
@@ -15,11 +42,11 @@ class Record {
   using Selector =
       decltype(const_query::Select(
                  const_query::Query<ChainTable>()
-                   .Get<ChainTable::KEY>()
-                   .Get<ChainTable::NAME>(),
+                   .Get<ChainTable::KEY>()          // 0
+                   .Get<ChainTable::NAME>(),        // 1
                  const_query::Query<ChainTable>(),
                  const_query::Query<DataTable>()
-                   .Get<DataTable::DATA>())
+                   .Get<DataTable::DATA>())         // 2
                  .JoinNextOn<0, ChainTable::PARENT_KEY,
                                 ChainTable::KEY>()
                  .JoinNextOn<1, ChainTable::DATA_KEY,
@@ -45,23 +72,13 @@ std::ostream& operator <<(std::ostream& out, const Record& record) {
 }
 
 int main() {
-  static constexpr Record::Selector selector;
+  QueryRunner<Record> runner({
+        std::vector<std::string>{ "1",   "One",    "x" },
+        std::vector<std::string>{ "2",   "Two",    "y" },
+        std::vector<std::string>{ "Bad", "Three",  "z" },
+      });
 
-  std::cout << selector.GetQuery() << std::endl;
-
-  const auto column_names = selector.GetColumnNames();
-
-  for (const auto raw_result :
-        {
-          std::vector<std::string>{ "1",   "One",    "x" },
-          std::vector<std::string>{ "2",   "Two",    "y" },
-          std::vector<std::string>{ "Bad", "Three",  "z" },
-        }) {
-    const auto converted = selector.ConvertRow(raw_result);
-    if (!converted) {
-      std::cerr << "conversion failed" << std::endl;
-    } else {
-      std::cout << Record(*converted) << std::endl;
-    }
+  for (const auto& record : runner.Execute()) {
+    std::cout << *record << std::endl;
   }
 }
