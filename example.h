@@ -9,43 +9,42 @@
 #include "query.h"
 #include "schema.h"
 
+namespace example_schema {
+
+enum class ChainTable {
+  KEY,
+  NAME,
+  PARENT_KEY,
+  DATA_KEY,
+  COUNT_KEY,
+};
+
+enum class DataTable {
+  KEY,
+  DATA,
+};
+
 class ExampleDatabase {
   ExampleDatabase() = delete;
   ~ExampleDatabase() = delete;
 };
 
-class ChainTable {
- public:
-  enum class ColumnName {
-    KEY,
-    NAME,
-    PARENT_KEY,
-    DATA_KEY,
-    COUNT_KEY,
-  };
-
-  static constexpr const_query::Query<ColumnName> EmptyQuery() {
-    return const_query::Query<ColumnName>();
-  }
-
-  ChainTable() = delete;
-  ~ChainTable() = delete;
-};
+}  // namespace example_schema
 
 namespace const_query {
 
 template<>
-struct Database<ChainTable::ColumnName> {
-  using Id = ExampleDatabase;
+struct Database<::example_schema::ChainTable> {
+  using Id = ::example_schema::ExampleDatabase;
 };
 
 template <>
-struct Table<ChainTable::ColumnName> {
+struct Table<::example_schema::ChainTable> {
   static std::string TableName() { return "ChainTable"; }
 };
 
 template<>
-struct Column<ChainTable::ColumnName, ChainTable::ColumnName::KEY>
+struct Column<::example_schema::ChainTable, ::example_schema::ChainTable::KEY>
     : public SimpleColumn<int> {
   static std::string ColumnName(const std::string& table) {
     return WithTable(table, "Key");
@@ -53,7 +52,7 @@ struct Column<ChainTable::ColumnName, ChainTable::ColumnName::KEY>
 };
 
 template<>
-struct Column<ChainTable::ColumnName, ChainTable::ColumnName::NAME>
+struct Column<::example_schema::ChainTable, ::example_schema::ChainTable::NAME>
     : public SimpleColumn<std::string> {
   static std::string ColumnName(const std::string& table) {
     return WithTable(table, "Name");
@@ -61,7 +60,7 @@ struct Column<ChainTable::ColumnName, ChainTable::ColumnName::NAME>
 };
 
 template<>
-struct Column<ChainTable::ColumnName, ChainTable::ColumnName::PARENT_KEY>
+struct Column<::example_schema::ChainTable, ::example_schema::ChainTable::PARENT_KEY>
     : public SimpleColumn<int> {
   static std::string ColumnName(const std::string& table) {
     return WithTable(table, "ParentKey");
@@ -69,7 +68,7 @@ struct Column<ChainTable::ColumnName, ChainTable::ColumnName::PARENT_KEY>
 };
 
 template<>
-struct Column<ChainTable::ColumnName, ChainTable::ColumnName::DATA_KEY>
+struct Column<::example_schema::ChainTable, ::example_schema::ChainTable::DATA_KEY>
     : public SimpleColumn<int> {
   static std::string ColumnName(const std::string& table) {
     return WithTable(table, "DataKey");
@@ -77,44 +76,25 @@ struct Column<ChainTable::ColumnName, ChainTable::ColumnName::DATA_KEY>
 };
 
 template<>
-struct Column<ChainTable::ColumnName, ChainTable::ColumnName::COUNT_KEY>
+struct Column<::example_schema::ChainTable, ::example_schema::ChainTable::COUNT_KEY>
     : public CountColumn {
   static std::string ColumnName(const std::string& table) {
     return WithTable(table, "Key");
   }
 };
 
-}  // namespace const_query
-
-class DataTable {
- public:
-  enum class ColumnName {
-    KEY,
-    DATA,
-  };
-
-  static constexpr const_query::Query<ColumnName> EmptyQuery() {
-    return const_query::Query<ColumnName>();
-  }
-
-  DataTable() = delete;
-  ~DataTable() = delete;
-};
-
-namespace const_query {
-
 template<>
-struct Database<DataTable::ColumnName> {
-  using Id = ExampleDatabase;
+struct Database<::example_schema::DataTable> {
+  using Id = ::example_schema::ExampleDatabase;
 };
 
 template <>
-struct Table<DataTable::ColumnName> {
+struct Table<::example_schema::DataTable> {
   static std::string TableName() { return "DataTable"; }
 };
 
 template<>
-struct Column<DataTable::ColumnName, DataTable::ColumnName::KEY>
+struct Column<::example_schema::DataTable, ::example_schema::DataTable::KEY>
     : public SimpleColumn<int> {
   static std::string ColumnName(const std::string& table) {
     return WithTable(table, "Key");
@@ -122,7 +102,7 @@ struct Column<DataTable::ColumnName, DataTable::ColumnName::KEY>
 };
 
 template<>
-struct Column<DataTable::ColumnName, DataTable::ColumnName::DATA>
+struct Column<::example_schema::DataTable, ::example_schema::DataTable::DATA>
     : public SimpleColumn<std::string> {
   static std::string ColumnName(const std::string& table) {
     return WithTable(table, "Data");

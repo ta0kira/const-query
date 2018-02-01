@@ -7,6 +7,9 @@
 
 #include "selector.h"
 
+using example_schema::ChainTable;
+using example_schema::DataTable;
+
 template <class Type>
 struct PrintType {
   const Type& value;
@@ -32,16 +35,16 @@ std::ostream& operator << (std::ostream& out, const PrintType<std::string>& type
 
 int main() {
   static constexpr auto selector = const_query::Select(
-    ChainTable::EmptyQuery()
-      .Get<ChainTable::ColumnName::COUNT_KEY>()
-      .Get<ChainTable::ColumnName::NAME>(),
-    ChainTable::EmptyQuery(),
-    DataTable::EmptyQuery()
-      .Get<DataTable::ColumnName::DATA>())
-    .JoinNextOn<0, ChainTable::ColumnName::PARENT_KEY,
-                   ChainTable::ColumnName::KEY>()
-    .JoinNextOn<1, ChainTable::ColumnName::DATA_KEY,
-                   DataTable::ColumnName::KEY>();
+    const_query::Query<ChainTable>()
+      .Get<ChainTable::COUNT_KEY>()
+      .Get<ChainTable::NAME>(),
+    const_query::Query<ChainTable>(),
+    const_query::Query<DataTable>()
+      .Get<DataTable::DATA>())
+    .JoinNextOn<0, ChainTable::PARENT_KEY,
+                   ChainTable::KEY>()
+    .JoinNextOn<1, ChainTable::DATA_KEY,
+                   DataTable::KEY>();
 
   std::cout << selector.GetQuery() << std::endl;
 
