@@ -10,29 +10,21 @@
 #include "selector.h"
 
 template<class RecordType>
-class QueryRunner {
- public:
-  QueryRunner(const std::initializer_list<std::vector<std::string>>& raw_results)
-      : raw_results_(raw_results) {}
-
-  std::list<std::unique_ptr<RecordType>> Execute() {
-    static constexpr typename RecordType::Selector SELECTOR;
-    std::cerr << "Faking query: " << SELECTOR.GetQuery() << std::endl;
-    std::list<std::unique_ptr<RecordType>> results;
-    for (const std::vector<std::string>& raw_result : raw_results_) {
-      const auto converted = SELECTOR.ConvertRow(raw_result);
-      if (!converted) {
-        std::cerr << "conversion failed" << std::endl;
-      } else {
-        results.emplace_back(new RecordType(*converted));
-      }
+std::list<std::unique_ptr<RecordType>> PretendToExecuteQuery(
+    const std::vector<std::vector<std::string>>& raw_results) {
+  static constexpr typename RecordType::Selector SELECTOR;
+  std::cerr << "Faking query: " << SELECTOR.GetQuery() << std::endl;
+  std::list<std::unique_ptr<RecordType>> results;
+  for (const std::vector<std::string>& raw_result : raw_results) {
+    const auto converted = SELECTOR.ConvertRow(raw_result);
+    if (!converted) {
+      std::cerr << "conversion failed" << std::endl;
+    } else {
+      results.emplace_back(new RecordType(*converted));
     }
-    return results;
   }
-
-private:
-  const std::vector<std::vector<std::string>> raw_results_;
-};
+  return results;
+}
 
 using example_schema::ChainTable;
 using example_schema::DataTable;
@@ -72,13 +64,13 @@ std::ostream& operator <<(std::ostream& out, const Record& record) {
 }
 
 int main() {
-  QueryRunner<Record> runner({
+  const auto records = PretendToExecuteQuery<Record>({
         std::vector<std::string>{ "1",   "One",    "x" },
         std::vector<std::string>{ "2",   "Two",    "y" },
         std::vector<std::string>{ "Bad", "Three",  "z" },
       });
 
-  for (const auto& record : runner.Execute()) {
+  for (const auto& record : records) {
     std::cout << *record << std::endl;
   }
 }
