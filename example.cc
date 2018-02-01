@@ -10,29 +10,6 @@
 using example_schema::ChainTable;
 using example_schema::DataTable;
 
-template <class Type>
-struct PrintType {
-  const Type& value;
-};
-
-template <class Type>
-PrintType<Type> WithType(const Type& value) {
-  return PrintType<Type>{value};
-}
-
-template <class Type>
-std::ostream& operator << (std::ostream& out, const PrintType<Type>& type_printer) {
-  return out << type_printer.value << " [?]";
-}
-
-std::ostream& operator << (std::ostream& out, const PrintType<int>& type_printer) {
-  return out << type_printer.value << " [int]";
-}
-
-std::ostream& operator << (std::ostream& out, const PrintType<std::string>& type_printer) {
-  return out << type_printer.value << " [std::string]";
-}
-
 int main() {
   static constexpr auto selector = const_query::Select(
     const_query::Query<ChainTable>()
@@ -60,9 +37,9 @@ int main() {
     if (!converted) {
       std::cerr << "conversion failed" << std::endl;
     } else {
-      std::cout << column_names[0] << ": " << WithType(std::get<0>(*converted)) << std::endl;
-      std::cout << column_names[1] << ": " << WithType(std::get<1>(*converted)) << std::endl;
-      std::cout << column_names[2] << ": " << WithType(std::get<2>(*converted)) << std::endl;
+      std::cout << column_names[0] << ": " << std::get<0>(*converted) << std::endl;
+      std::cout << column_names[1] << ": " << std::get<1>(*converted) << std::endl;
+      std::cout << column_names[2] << ": " << std::get<2>(*converted) << std::endl;
     }
   }
 }
