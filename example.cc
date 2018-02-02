@@ -7,13 +7,16 @@
 
 #include "example.h"
 
+#include "filter.h"
 #include "selector.h"
 
 template<class RecordType>
 std::list<std::unique_ptr<RecordType>> PretendToExecuteQuery(
-    const std::vector<std::vector<std::string>>& raw_results) {
+    const std::vector<std::vector<std::string>>& raw_results,
+    const const_query::Filter<typename RecordType::Selector>& filter =
+        const_query::EmptyFilter<typename RecordType::Selector>()) {
   static constexpr typename RecordType::Selector SELECTOR;
-  std::cerr << "Faking query: " << SELECTOR.GetQuery() << std::endl;
+  std::cerr << "Faking query: " << filter.GetQuery() << std::endl;
   std::list<std::unique_ptr<RecordType>> results;
   for (const std::vector<std::string>& raw_result : raw_results) {
     const auto converted = SELECTOR.ConvertRow(raw_result);
@@ -64,11 +67,19 @@ std::ostream& operator <<(std::ostream& out, const Record& record) {
 }
 
 int main() {
+  using P = const_query::Predicate<Record::Selector>;
+  const auto filter =
+      P::And::New(
+        P::Equals<0, ChainTable::KEY,
+                  1, ChainTable::PARENT_KEY>::New(),
+        P::Equals<0, ChainTable::KEY,
+                  2, DataTable::KEY>::New());
+
   const auto records = PretendToExecuteQuery<Record>({
         std::vector<std::string>{ "1",   "One",    "x" },
         std::vector<std::string>{ "2",   "Two",    "y" },
         std::vector<std::string>{ "Bad", "Three",  "z" },
-      });
+      }, filter);
 
   for (const auto& record : records) {
     std::cout << *record << std::endl;

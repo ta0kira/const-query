@@ -22,7 +22,7 @@ template<int L, class ColumnEnumL, ColumnEnumL ColumnL,
 struct QueryJoiner {
   static std::string ToString() {
     std::ostringstream output;
-    output << Column<ColumnEnumL, ColumnL>::ColumnName(TableAlias<ColumnEnumL, L>::Get()) << " == "
+    output << Column<ColumnEnumL, ColumnL>::ColumnName(TableAlias<ColumnEnumL, L>::Get()) << " = "
            << Column<ColumnEnumR, ColumnR>::ColumnName(TableAlias<ColumnEnumR, R>::Get());
     return output.str();
   }
