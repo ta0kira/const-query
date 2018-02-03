@@ -67,13 +67,13 @@ std::ostream& operator <<(std::ostream& out, const Record& record) {
 }
 
 int main() {
-  using P = const_query::Predicate<Record::Selector>;
+  static constexpr const_query::FilterBuilder<Record::Selector> B;
   const auto filter =
-      P::And::New(
-        P::Equals<0, ChainTable::KEY,
-                  1, ChainTable::PARENT_KEY>::New(),
-        P::Equals<0, ChainTable::KEY,
-                  2, DataTable::KEY>::New());
+      B.And(
+        B.Equals<0, ChainTable::KEY,
+                 1, ChainTable::PARENT_KEY>(),
+        B.Equals<0, ChainTable::KEY,
+                 2, DataTable::KEY>());
 
   const auto records = PretendToExecuteQuery<Record>({
         std::vector<std::string>{ "1",   "One",    "x" },

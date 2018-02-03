@@ -11,26 +11,6 @@
 namespace const_query {
 
 template<class Select>
-class Filter;
-
-template<class Select>
-class Predicate {};
-
-template<class Queries, class Joins>
-class Predicate<Selector<Queries, Joins>> {
- public:
-  virtual std::ostream& SerializeTo(std::ostream& out) const = 0;
-  virtual ~Predicate() = default;
-
-  class And;
-  class Or;
-
-  template<int L, typename std::tuple_element<L, Queries>::type::TableType ColumnL,
-           int R, typename std::tuple_element<R, Queries>::type::TableType ColumnR>
-  class Equals;
-};
-
-template<class Select>
 class Filter {
  public:
   virtual std::string GetQuery() const = 0;
@@ -41,15 +21,49 @@ class Filter {
 };
 
 template<class Select>
+class EmptyFilter;
+
+template<class Select>
+class NonEmptyFilter;
+
+template<class Select>
+class FilterBuilder {
+  FilterBuilder() = delete;
+  ~FilterBuilder() = delete;
+};
+
+template<class Queries, class Joins>
+class FilterBuilder<Selector<Queries, Joins>> {
+ public:
+  constexpr FilterBuilder() = default;
+
+  using FilterType = NonEmptyFilter<Selector<Queries, Joins>>;
+
+  FilterType And(FilterType l, FilterType r) const;
+  FilterType Or(FilterType l, FilterType r) const;
+
+  template<int L, typename std::tuple_element<L, Queries>::type::TableType ColumnL,
+           int R, typename std::tuple_element<R, Queries>::type::TableType ColumnR>
+  FilterType Equals() const;
+};
+
+template<class Select>
 class EmptyFilter : public Filter<Select> {
  public:
-  EmptyFilter() = default;
+  constexpr EmptyFilter() = default;
   virtual ~EmptyFilter() = default;
 
   virtual std::string GetQuery() const final {
     return Select().GetQuery();
   }
 };
+
+namespace internal {
+
+template<class Select>
+class Predicate;
+
+} //  namespace internal
 
 template<class Select>
 class NonEmptyFilter : public Filter<Select> {
@@ -61,78 +75,105 @@ class NonEmptyFilter : public Filter<Select> {
   }
 
  private:
-  NonEmptyFilter(std::unique_ptr<const Predicate<Select>> p) : p_(std::move(p)) {}
+  NonEmptyFilter(std::unique_ptr<const internal::Predicate<Select>> p)
+      : p_(std::move(p)) {}
 
-  std::unique_ptr<const Predicate<Select>> p_;
-  template<class Select2> friend class Predicate;
+  std::unique_ptr<const internal::Predicate<Select>> p_;
+  template<class Select2> friend class FilterBuilder;
+};
+
+namespace internal {
+
+template<class Select>
+class Predicate {
+  Predicate() = delete;
+  ~Predicate() = delete;
 };
 
 template<class Queries, class Joins>
-class Predicate<Selector<Queries, Joins>>::And : public Predicate<Selector<Queries, Joins>> {
+class Predicate<Selector<Queries, Joins>> {
  public:
-  using FilterType = NonEmptyFilter<Selector<Queries, Joins>>;
+  virtual std::ostream& SerializeTo(std::ostream& out) const = 0;
+  virtual ~Predicate() = default;
+};
 
-  static FilterType New(FilterType l, FilterType r) {
-    return FilterType{ std::unique_ptr<Predicate>(new And(std::move(l), std::move(r))) };
-  }
+template<class Queries, class Joins>
+std::ostream& operator <<(std::ostream& out, const Predicate<Selector<Queries, Joins>>& predicate) {
+  return predicate.SerializeTo(out);
+}
+
+template<class Queries, class Joins>
+class PredicateAnd : public Predicate<Selector<Queries, Joins>> {
+ public:
+  PredicateAnd(std::unique_ptr<const Predicate<Selector<Queries, Joins>>> l,
+               std::unique_ptr<const Predicate<Selector<Queries, Joins>>> r)
+      : l_(std::move(l)), r_(std::move(r)) {}
 
   std::ostream& SerializeTo(std::ostream& out) const final {
     return out << "(" << *l_ << " AND " << *r_ << ")";
   }
 
  private:
-  And(FilterType l, FilterType r) : l_(std::move(l.p_)), r_(std::move(r.p_)) {}
-
   const std::unique_ptr<const Predicate<Selector<Queries, Joins>>> l_, r_;
 };
 
 template<class Queries, class Joins>
-class Predicate<Selector<Queries, Joins>>::Or : public Predicate<Selector<Queries, Joins>> {
+class PredicateOr : public Predicate<Selector<Queries, Joins>> {
  public:
-  using FilterType = NonEmptyFilter<Selector<Queries, Joins>>;
-
-  static FilterType New(FilterType l, FilterType r) {
-    return FilterType(std::unique_ptr<Predicate>(new Or(std::move(l), std::move(r))));
-  }
+  PredicateOr(std::unique_ptr<const Predicate<Selector<Queries, Joins>>> l,
+              std::unique_ptr<const Predicate<Selector<Queries, Joins>>> r)
+      : l_(std::move(l)), r_(std::move(r)) {}
 
   std::ostream& SerializeTo(std::ostream& out) const final {
     return out << "(" << *l_ << " OR " << *r_ << ")";
   }
 
  private:
-  Or(FilterType l, FilterType r) : l_(std::move(l.p_)), r_(std::move(r.p_)) {}
-
   const std::unique_ptr<const Predicate<Selector<Queries, Joins>>> l_, r_;
 };
 
-template<class Queries, class Joins>
-template<int L, typename std::tuple_element<L, Queries>::type::TableType ColumnL,
+template<class Queries, class Joins,
+         int L, typename std::tuple_element<L, Queries>::type::TableType ColumnL,
          int R, typename std::tuple_element<R, Queries>::type::TableType ColumnR>
-class Predicate<Selector<Queries, Joins>>::Equals : public Predicate<Selector<Queries, Joins>> {
+class PredicateEquals : public Predicate<Selector<Queries, Joins>> {
  private:
   using ColumnEnumL = typename std::tuple_element<L, Queries>::type::TableType;
   using ColumnEnumR = typename std::tuple_element<R, Queries>::type::TableType;
 
  public:
-  using FilterType = NonEmptyFilter<Selector<Queries, Joins>>;
-
-  static FilterType New() {
-    return FilterType(std::unique_ptr<Predicate>(new Equals));
-  }
-
   std::ostream& SerializeTo(std::ostream& out) const final {
     return out << "("
                 << Column<ColumnEnumL, ColumnL>::ColumnName(TableAlias<ColumnEnumL, L>::Get()) << " = "
                 << Column<ColumnEnumR, ColumnR>::ColumnName(TableAlias<ColumnEnumR, R>::Get()) << ")";
   }
-
- private:
-  Equals() {}
 };
 
+} //  namespace internal
+
 template<class Queries, class Joins>
-std::ostream& operator <<(std::ostream& out, const Predicate<Selector<Queries, Joins>>& predicate) {
-  return predicate.SerializeTo(out);
+typename FilterBuilder<Selector<Queries, Joins>>::FilterType
+FilterBuilder<Selector<Queries, Joins>>::And(FilterType l, FilterType r) const {
+  return FilterType(
+      std::unique_ptr<const internal::Predicate<Selector<Queries, Joins>>>(
+          new internal::PredicateAnd<Queries, Joins>(std::move(l.p_), std::move(r.p_))));
+}
+
+template<class Queries, class Joins>
+typename FilterBuilder<Selector<Queries, Joins>>::FilterType
+FilterBuilder<Selector<Queries, Joins>>::Or(FilterType l, FilterType r) const {
+  return FilterType(
+      std::unique_ptr<const internal::Predicate<Selector<Queries, Joins>>>(
+          new internal::PredicateOr<Queries, Joins>(std::move(l.p_), std::move(r.p_))));
+}
+
+template<class Queries, class Joins>
+template<int L, typename std::tuple_element<L, Queries>::type::TableType ColumnL,
+         int R, typename std::tuple_element<R, Queries>::type::TableType ColumnR>
+typename FilterBuilder<Selector<Queries, Joins>>::FilterType
+FilterBuilder<Selector<Queries, Joins>>::Equals() const {
+  return FilterType(
+      std::unique_ptr<const internal::Predicate<Selector<Queries, Joins>>>(
+          new internal::PredicateEquals<Queries, Joins, L, ColumnL, R, ColumnR>()));
 }
 
 }  // namespace const_query
