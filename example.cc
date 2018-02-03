@@ -11,13 +11,13 @@
 #include "record.h"
 #include "selector.h"
 
-template<class T, class Selector>
+template<class T, class Select>
 std::list<T> PretendToExecuteQuery(
     const std::vector<std::vector<std::string>>& raw_results,
-    const const_query::RecordBuilder<T, Selector>& builder,
-    const const_query::Filter<Selector>& filter =
-        const_query::EmptyFilter<Selector>()) {
-  static constexpr Selector SELECTOR;
+    const const_query::RecordBuilder<T, Select>& builder,
+    const const_query::Filter<Select>& filter =
+        const_query::EmptyFilter<Select>()) {
+  static constexpr Select SELECTOR;
   std::cerr << "Faking query: " << filter.GetQuery() << std::endl;
   std::list<T> results;
   for (const std::vector<std::string>& raw_result : raw_results) {
@@ -53,7 +53,7 @@ class ExampleRecord {
                  .JoinNextOn<1, ChainTable::DATA_KEY,
                                 DataTable::KEY>());
 
-  using FilterBuilder = const_query::FilterBuilder<ExampleRecord::Selector>;
+  using FilterBuilder = const_query::FilterBuilder<Selector>;
 
   class Builder
       : public const_query::RecordBuilder<std::unique_ptr<const ExampleRecord>, Selector> {

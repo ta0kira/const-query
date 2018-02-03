@@ -5,10 +5,10 @@
 
 namespace const_query {
 
-template<class T, class Selector>
+template<class T, class Select>
 class RecordBuilder {
  public:
-  using ColumnTypes = typename Selector::ColumnTypes;
+  using ColumnTypes = typename Select::ColumnTypes;
   virtual T CreateFrom(const ColumnTypes& source) const = 0;
 
  protected:

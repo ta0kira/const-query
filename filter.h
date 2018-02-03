@@ -15,9 +15,12 @@ class Filter {
  public:
   virtual std::string GetQuery() const = 0;
 
- protected:
+ private:
   Filter() = default;
   virtual ~Filter() = default;
+
+  template<class Select2> friend class EmptyFilter;
+  template<class Select2> friend class NonEmptyFilter;
 };
 
 template<class Select>
@@ -40,6 +43,7 @@ class FilterBuilder<Selector<Queries, Joins>> {
   using FilterType = NonEmptyFilter<Selector<Queries, Joins>>;
 
   FilterType And(FilterType l, FilterType r) const;
+
   FilterType Or(FilterType l, FilterType r) const;
 
   template<int L, typename std::tuple_element<L, Queries>::type::TableType ColumnL,
@@ -51,7 +55,6 @@ template<class Select>
 class EmptyFilter : public Filter<Select> {
  public:
   constexpr EmptyFilter() = default;
-  virtual ~EmptyFilter() = default;
 
   virtual std::string GetQuery() const final {
     return Select().GetQuery();
@@ -79,6 +82,7 @@ class NonEmptyFilter : public Filter<Select> {
       : p_(std::move(p)) {}
 
   std::unique_ptr<const internal::Predicate<Select>> p_;
+
   template<class Select2> friend class FilterBuilder;
 };
 
@@ -86,12 +90,6 @@ namespace internal {
 
 template<class Select>
 class Predicate {
-  Predicate() = delete;
-  ~Predicate() = delete;
-};
-
-template<class Queries, class Joins>
-class Predicate<Selector<Queries, Joins>> {
  public:
   virtual std::ostream& SerializeTo(std::ostream& out) const = 0;
   virtual ~Predicate() = default;
@@ -103,39 +101,46 @@ std::ostream& operator <<(std::ostream& out, const Predicate<Selector<Queries, J
 }
 
 template<class Queries, class Joins>
-class PredicateAnd : public Predicate<Selector<Queries, Joins>> {
+class PredicateAnd
+    : public Predicate<Selector<Queries, Joins>> {
  public:
-  PredicateAnd(std::unique_ptr<const Predicate<Selector<Queries, Joins>>> l,
-               std::unique_ptr<const Predicate<Selector<Queries, Joins>>> r)
-      : l_(std::move(l)), r_(std::move(r)) {}
-
   std::ostream& SerializeTo(std::ostream& out) const final {
     return out << "(" << *l_ << " AND " << *r_ << ")";
   }
 
  private:
+  PredicateAnd(std::unique_ptr<const Predicate<Selector<Queries, Joins>>> l,
+               std::unique_ptr<const Predicate<Selector<Queries, Joins>>> r)
+      : l_(std::move(l)), r_(std::move(r)) {}
+
   const std::unique_ptr<const Predicate<Selector<Queries, Joins>>> l_, r_;
+
+  template <class Select> friend class FilterBuilder;
 };
 
 template<class Queries, class Joins>
-class PredicateOr : public Predicate<Selector<Queries, Joins>> {
+class PredicateOr
+    : public Predicate<Selector<Queries, Joins>> {
  public:
-  PredicateOr(std::unique_ptr<const Predicate<Selector<Queries, Joins>>> l,
-              std::unique_ptr<const Predicate<Selector<Queries, Joins>>> r)
-      : l_(std::move(l)), r_(std::move(r)) {}
-
   std::ostream& SerializeTo(std::ostream& out) const final {
     return out << "(" << *l_ << " OR " << *r_ << ")";
   }
 
  private:
+  PredicateOr(std::unique_ptr<const Predicate<Selector<Queries, Joins>>> l,
+              std::unique_ptr<const Predicate<Selector<Queries, Joins>>> r)
+      : l_(std::move(l)), r_(std::move(r)) {}
+
   const std::unique_ptr<const Predicate<Selector<Queries, Joins>>> l_, r_;
+
+  template <class Select> friend class FilterBuilder;
 };
 
 template<class Queries, class Joins,
          int L, typename std::tuple_element<L, Queries>::type::TableType ColumnL,
          int R, typename std::tuple_element<R, Queries>::type::TableType ColumnR>
-class PredicateEquals : public Predicate<Selector<Queries, Joins>> {
+class PredicateEquals
+    : public Predicate<Selector<Queries, Joins>> {
  private:
   using ColumnEnumL = typename std::tuple_element<L, Queries>::type::TableType;
   using ColumnEnumR = typename std::tuple_element<R, Queries>::type::TableType;
@@ -146,6 +151,11 @@ class PredicateEquals : public Predicate<Selector<Queries, Joins>> {
                 << Column<ColumnEnumL, ColumnL>::ColumnName(TableAlias<ColumnEnumL, L>::Get()) << " = "
                 << Column<ColumnEnumR, ColumnR>::ColumnName(TableAlias<ColumnEnumR, R>::Get()) << ")";
   }
+
+ private:
+  PredicateEquals() = default;
+
+  template <class Select> friend class FilterBuilder;
 };
 
 } //  namespace internal
