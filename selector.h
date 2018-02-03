@@ -59,7 +59,7 @@ class JoinedSelector<Queries, Joins, true> {
     return column_names;
   }
 
-  std::unique_ptr<ColumnTypes> ConvertRow(const std::vector<std::string>& values) const {
+  std::unique_ptr<const ColumnTypes> ConvertRow(const std::vector<std::string>& values) const {
     auto row = std::unique_ptr<ColumnTypes>(new ColumnTypes);
     if (ConvertAll<Columns, std::tuple_size<Columns>::value>::At(values, row.get())) {
       return row;
