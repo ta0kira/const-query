@@ -11,6 +11,13 @@
 #include "record.h"
 #include "selector.h"
 
+// Fakes sending a query to a DBMS. The `raw_results` don't have strong typing,
+// like most results from SQL-like systems.
+//
+// The query itself is encoded in the type of `Select`, which is presumed to be
+// a `const_query::Selector<Queries, Joins>`. In the absence of a filter,
+// `const_query::EmptyFilter` is able to call `Selector::GetQuery`, which will
+// build the query by pattern-matching the template parameters.
 template<class T, class Select>
 std::list<T> PretendToExecuteQuery(
     const std::vector<std::vector<std::string>>& raw_results,
@@ -34,6 +41,15 @@ std::list<T> PretendToExecuteQuery(
 using example_schema::ChainTable;
 using example_schema::DataTable;
 
+// An example record object that is meant to be built using a specific query.
+// The query is ecoded in the `Selector` typedef. This is enough information to
+// build the entire SELECT + JOIN statement, without any WHERE clauses.
+//
+// `ExampleRecord` doesn't use the query information directly; it uses it to
+// define a `const_query::RecordBuilder`, which defines how to query for record
+// data and how to turn individual records into `ExampleRecord` instances. This
+// puts the query definition and field mappings all in one place, but without
+// any sort of business logic.
 class ExampleRecord {
  public:
   std::ostream& Print(std::ostream& out) const {
@@ -55,6 +71,11 @@ class ExampleRecord {
 
   using FilterBuilder = const_query::FilterBuilder<Selector>;
 
+  // This class encodes the query in the second `const_query::RecordBuilder`
+  // template parameter, and defines a builder function for turning the results
+  // of a query into `ExampleRecord`. This is sufficient information to query
+  // and translate *all* records, but filter can be build from `FilterBuilder`
+  // and passed separately to `PretendToExecuteQuery` by the caller.
   class Builder
       : public const_query::RecordBuilder<std::unique_ptr<const ExampleRecord>, Selector> {
    public:
