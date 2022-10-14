@@ -108,7 +108,6 @@ class PredicateAnd
     return out << "(" << *l_ << " AND " << *r_ << ")";
   }
 
- private:
   PredicateAnd(std::unique_ptr<const Predicate<Selector<Queries, Joins>>> l,
                std::unique_ptr<const Predicate<Selector<Queries, Joins>>> r)
       : l_(std::move(l)), r_(std::move(r)) {}
@@ -126,7 +125,6 @@ class PredicateOr
     return out << "(" << *l_ << " OR " << *r_ << ")";
   }
 
- private:
   PredicateOr(std::unique_ptr<const Predicate<Selector<Queries, Joins>>> l,
               std::unique_ptr<const Predicate<Selector<Queries, Joins>>> r)
       : l_(std::move(l)), r_(std::move(r)) {}
@@ -146,6 +144,8 @@ class PredicateEquals
   using ColumnEnumR = typename std::tuple_element<R, Queries>::type::TableType;
 
  public:
+  PredicateEquals() = default;
+
   std::ostream& SerializeTo(std::ostream& out) const final {
     return out << "("
                 << Column<ColumnEnumL, ColumnL>::ColumnName(TableAlias<ColumnEnumL, L>::Get()) << " = "
@@ -153,8 +153,6 @@ class PredicateEquals
   }
 
  private:
-  PredicateEquals() = default;
-
   template <class Select> friend class FilterBuilder;
 };
 

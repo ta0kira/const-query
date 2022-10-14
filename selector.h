@@ -38,11 +38,12 @@ template<class Queries, class Joins>
 class JoinedSelector<Queries, Joins, true> {
  private:
   using Columns = typename QueriesToColumns<Queries>::Type;
-  constexpr JoinedSelector() = default;
-  ~JoinedSelector() = default;
   template<class Queries2, class Joins2> friend class Selector;
 
  public:
+  constexpr JoinedSelector() = default;
+  ~JoinedSelector() = default;
+
   using ColumnTypes = typename ColumnsToTypes<Columns>::Types;
 
   std::string GetQuery() const {
@@ -143,11 +144,12 @@ class JoinedSelector<Queries, Joins, false> {
  private:
   static constexpr int NextJoin = std::tuple_size<Joins>::value+1;
   static constexpr int RemainingJoins = std::tuple_size<Queries>::value-NextJoin;
-  constexpr JoinedSelector() = default;
-  ~JoinedSelector() = default;
   template<class Queries2, class Joins2> friend class Selector;
 
  public:
+  constexpr JoinedSelector() = default;
+  ~JoinedSelector() = default;
+
   template<int L, typename GetTableType<L, Queries>::Type ColumnL,
            typename GetTableType<NextJoin, Queries>::Type ColumnR>
   constexpr typename ValidateJoin<Queries,
